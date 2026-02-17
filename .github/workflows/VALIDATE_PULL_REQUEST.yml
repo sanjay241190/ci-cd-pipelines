@@ -74,5 +74,26 @@ jobs:
         run: |
           ls -R force-app-delta || echo "No delta generated"
 
+      - name: Print Generated package.xml
+        run: |
+          if [ -f force-app-delta/package/package.xml ]; then
+            echo "================ PACKAGE.XML ================"
+            cat force-app-delta/package/package.xml
+            echo "============================================="
+          else
+            echo "No package.xml generated"
+          fi
+
+      - name: Print Generated destructiveChanges.xml
+        run: |
+          if [ -f force-app-delta/destructiveChanges/destructiveChanges.xml ]; then
+            echo "========== DESTRUCTIVE CHANGES XML =========="
+            cat force-app-delta/destructiveChanges/destructiveChanges.xml
+            echo "============================================="
+          else
+            echo "No destructiveChanges.xml generated"
+          fi
+
+
 
 
