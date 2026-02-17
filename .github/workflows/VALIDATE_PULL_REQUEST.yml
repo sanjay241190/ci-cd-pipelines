@@ -9,7 +9,9 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: sanjaxsf/prulife-sf:latest
+      image: sanjaxsf/prulife-sf:1.0.0
+      options: --pull always
+      
       credentials:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
