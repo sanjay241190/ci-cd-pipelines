@@ -37,6 +37,11 @@ jobs:
           node -v
           pmd --version || echo "PMD version check skipped"
 
+      - name: Fix Git Safe Directory
+        run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
+
+
       - name: Fetch Target Branch
         run: |
           git fetch origin ${{ github.event.client_payload.target_branch }}
