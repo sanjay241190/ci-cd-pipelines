@@ -54,10 +54,15 @@ jobs:
           echo "merge_base=$MERGE_BASE" >> $GITHUB_OUTPUT
           echo "Merge Base: $MERGE_BASE"
 
+      - name: Debug Installed Plugins
+        run: |
+          sf plugins
+          sf commands | grep delta || true
+
       - name: Generate Delta Package
         run: |
           mkdir force-app-delta
-          sf sgd source delta \
+          sf sgd:source:delta \
             --to HEAD \
             --from ${{ steps.mergebase.outputs.merge_base }} \
             --output-dir force-app-delta \
