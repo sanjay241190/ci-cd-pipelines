@@ -66,7 +66,7 @@ jobs:
           mkdir force-app-delta
           sf sgd:source:delta \
             --to HEAD \
-            --from ${{ steps.mergebase.outputs.merge_base }} \
+            --from origin/${{ github.event.client_payload.target_branch }} \
             --output-dir force-app-delta \
             --source-dir force-app
       
