@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     container:
-      image: sanjaxsf/prulife-sf:1.0.0
+      image: sanjaxsf/prulife-sf:1.0.1
       options: --pull always
       
       credentials:
