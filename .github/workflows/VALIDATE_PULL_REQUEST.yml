@@ -27,6 +27,7 @@ jobs:
           repository: sanjay241190/SalesforcePrulifePOC
           ref: ${{ github.event.client_payload.source_branch }}
           token: ${{ secrets.GH_PAT }}
+          fetch-depth: 0
 
       - name: Environment Sanity Check
         run: |
