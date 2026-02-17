@@ -54,6 +54,11 @@ jobs:
           echo "merge_base=$MERGE_BASE" >> $GITHUB_OUTPUT
           echo "Merge Base: $MERGE_BASE"
 
+      - name: Install Required SF Plugins
+        run: |
+          sf plugins install sfdx-git-delta --force
+          sf plugins install @salesforce/sfdx-scanner --force
+
       - name: Debug Installed Plugins
         run: |
           sf plugins
