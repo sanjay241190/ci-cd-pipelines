@@ -24,7 +24,7 @@ jobs:
       - name: Checkout SalesforcePrulifePOC Repo
         uses: actions/checkout@v4
         with:
-          repository: your-org/SalesforcePrulifePOC
+          repository: sanjay241190/SalesforcePrulifePOC
           ref: ${{ github.event.client_payload.source_branch }}
           token: ${{ secrets.GH_PAT }}
 
