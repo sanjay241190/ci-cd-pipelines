@@ -56,8 +56,8 @@ jobs:
 
       - name: Install Required SF Plugins
         run: |
-          sf plugins install sfdx-git-delta --force --no-interactive
-          sf plugins install @salesforce/sfdx-scanner --force --no-interactive
+          yes | sf plugins install sfdx-git-delta --force
+          sf plugins install @salesforce/sfdx-scanner
 
       - name: Debug Installed Plugins
         run: |
