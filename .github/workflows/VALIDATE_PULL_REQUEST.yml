@@ -54,4 +54,18 @@ jobs:
           echo "merge_base=$MERGE_BASE" >> $GITHUB_OUTPUT
           echo "Merge Base: $MERGE_BASE"
 
+      - name: Generate Delta Package
+        run: |
+          mkdir force-app-delta
+          sf sgd source delta \
+            --to HEAD \
+            --from ${{ steps.mergebase.outputs.merge_base }} \
+            --output-dir force-app-delta \
+            --source-dir force-app
+      
+      - name: Show Delta Structure
+        run: |
+          ls -R force-app-delta || echo "No delta generated"
+
+
 
