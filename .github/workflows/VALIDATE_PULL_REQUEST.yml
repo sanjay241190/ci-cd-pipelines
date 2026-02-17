@@ -1,18 +1,13 @@
 name: VALIDATE PULL REQUEST
 
 on:
-  pull_request:
-    branches:
-      - main
-      - sit
-      - master
-      - uat2
-      # Add all other branches from your Azure YAML here
+  repository_dispatch:
+    types: [sf-pr-created]
 
 jobs:
   validate:
     runs-on: ubuntu-latest
-    # Reference your newly published Docker image
+
     container:
       image: sanjaxsf/prulife-sf:latest
       credentials:
@@ -20,6 +15,19 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     steps:
+      - name: Extract PR Metadata
+        run: |
+          echo "PR Number: ${{ github.event.client_payload.pr_number }}"
+          echo "Source Branch: ${{ github.event.client_payload.source_branch }}"
+          echo "Target Branch: ${{ github.event.client_payload.target_branch }}"
+
+      - name: Checkout SalesforcePrulifePOC Repo
+        uses: actions/checkout@v4
+        with:
+          repository: your-org/SalesforcePrulifePOC
+          ref: ${{ github.event.client_payload.source_branch }}
+          token: ${{ secrets.GH_PAT }}
+
       - name: Environment Sanity Check
         run: |
           echo "Checking installed tools..."
