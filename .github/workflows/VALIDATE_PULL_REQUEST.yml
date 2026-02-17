@@ -46,9 +46,9 @@ jobs:
         run: |
           git fetch origin ${{ github.event.client_payload.target_branch }}
 
-            - name: Compute Merge Base
-          id: mergebase
-          run: |
+      - name: Compute Merge Base
+        id: mergebase
+        run: |
             MERGE_BASE=$(git merge-base HEAD origin/${{ github.event.client_payload.target_branch }})
             echo "merge_base=$MERGE_BASE" >> $GITHUB_OUTPUT
             echo "Merge Base: $MERGE_BASE"
