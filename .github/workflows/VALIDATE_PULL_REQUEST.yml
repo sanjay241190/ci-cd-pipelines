@@ -19,7 +19,7 @@ on:
 
 jobs:
   validate:
-    if: contains(fromJson('["main","r23dev","datamig","master","uat2","sit","stg","hotfix","develop3","euat","r2dev5"]'), inputs.target_branch)
+    if: contains(fromJson('["main","uat","rdev5"]'), inputs.target_branch)
     runs-on: ubuntu-latest
 
     container:
