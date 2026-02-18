@@ -1,8 +1,21 @@
-name: VALIDATE PULL REQUEST
+name: VALIDATE PULL REQUEST (Reusable)
 
 on:
-  repository_dispatch:
-    types: [sf-pr-created]
+  workflow_call:
+    inputs:
+      source_branch:
+        required: true
+        type: string
+      target_branch:
+        required: true
+        type: string
+    secrets:
+      GH_PAT:
+        required: true
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
 
 jobs:
   validate:
@@ -11,24 +24,21 @@ jobs:
     container:
       image: sanjaxsf/prulife-sf:1.0.3
       options: --pull always
-      
       credentials:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     steps:
-      - name: Extract PR Metadata
-        run: |
-          echo "PR Number: ${{ github.event.client_payload.pr_number }}"
-          echo "Source Branch: ${{ github.event.client_payload.source_branch }}"
-          echo "Target Branch: ${{ github.event.client_payload.target_branch }}"
 
-      - name: Checkout SalesforcePrulifePOC Repo
+      - name: Display PR Info
+        run: |
+          echo "Source Branch: ${{ inputs.source_branch }}"
+          echo "Target Branch: ${{ inputs.target_branch }}"
+
+      - name: Checkout Salesforce Repo
         uses: actions/checkout@v4
         with:
-          repository: sanjay241190/SalesforcePrulifePOC
-          ref: ${{ github.event.client_payload.source_branch }}
-          token: ${{ secrets.GH_PAT }}
+          ref: ${{ inputs.source_branch }}
           fetch-depth: 0
 
       - name: Environment Sanity Check
@@ -41,18 +51,15 @@ jobs:
           pmd --version || echo "PMD version check skipped"
 
       - name: Fix Git Safe Directory
-        run: |
-          git config --global --add safe.directory $GITHUB_WORKSPACE
-
+        run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
       - name: Fetch Target Branch
-        run: |
-          git fetch origin ${{ github.event.client_payload.target_branch }}
+        run: git fetch origin ${{ inputs.target_branch }}
 
       - name: Compute Merge Base
         id: mergebase
         run: |
-          MERGE_BASE=$(git merge-base HEAD origin/${{ github.event.client_payload.target_branch }})
+          MERGE_BASE=$(git merge-base HEAD origin/${{ inputs.target_branch }})
           echo "merge_base=$MERGE_BASE" >> $GITHUB_OUTPUT
           echo "Merge Base: $MERGE_BASE"
 
@@ -66,10 +73,10 @@ jobs:
           mkdir force-app-delta
           sf sgd:source:delta \
             --to HEAD \
-            --from origin/${{ github.event.client_payload.target_branch }} \
+            --from ${{ steps.mergebase.outputs.merge_base }} \
             --output-dir force-app-delta \
             --source-dir force-app
-      
+
       - name: Show Delta Structure
         run: |
           ls -R force-app-delta || echo "No delta generated"
@@ -93,7 +100,3 @@ jobs:
           else
             echo "No destructiveChanges.xml generated"
           fi
-
-
-
-
