@@ -110,3 +110,19 @@ jobs:
           else
             echo "No destructiveChanges.xml generated"
           fi
+          
+      - name: Resolve Environment From Branch
+        id: resolve_env
+        run: |
+          case "${{ inputs.target_branch }}" in            
+            dev)       ENV_NAME="SANDEV" ;;
+            uat)       ENV_NAME="SANUAT" ;;
+            *)
+              echo "Unknown branch mapping."
+              exit 1
+              ;;
+          esac
+
+          echo "Resolved Environment: $ENV_NAME"
+          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+      
