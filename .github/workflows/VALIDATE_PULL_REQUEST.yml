@@ -125,4 +125,13 @@ jobs:
 
           echo "Resolved Environment: $ENV_NAME"
           echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+
+      - name: Authenticate to Target Org
+        run: |
+          echo "${{ secrets.SF_AUTH_URL }}" > token.txt
+          sf auth sfdxurl store -f token.txt -a myOrg -s
+
+      - name: Verify Auth
+        run: |
+          sf org list
       
