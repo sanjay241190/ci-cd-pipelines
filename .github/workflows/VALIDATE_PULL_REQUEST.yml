@@ -16,6 +16,10 @@ on:
         required: true
       DOCKER_PASSWORD:
         required: true
+      SF_AUTH_URL_DEV:
+        required: false
+      SF_AUTH_URL_UAT:
+        required: false
 
 jobs:
   validate:
