@@ -16,15 +16,53 @@ on:
         required: true
       DOCKER_PASSWORD:
         required: true
-      SF_AUTH_URL_DEV:
-        required: false
-      SF_AUTH_URL_UAT:
-        required: false
 
 jobs:
-  validate:
+
+  # =========================================================
+  # JOB 1 – Resolve Environment (Runs ONLY for allowed branches)
+  # =========================================================
+  resolve:
     if: contains(fromJson('["main","uat","dev"]'), inputs.target_branch)
     runs-on: ubuntu-latest
+
+    outputs:
+      env_name: ${{ steps.resolve_env.outputs.env_name }}
+
+    steps:
+      - name: Resolve Environment From Branch
+        id: resolve_env
+        run: |
+          case "${{ inputs.target_branch }}" in
+            dev)
+              ENV_NAME="SANDEV"
+              ;;
+            uat)
+              ENV_NAME="SANUAT"
+              ;;
+            main)
+              ENV_NAME="SANPROD"
+              ;;
+            *)
+              echo "Branch not supported. Exiting."
+              exit 1
+              ;;
+          esac
+
+          echo "Resolved Environment: $ENV_NAME"
+          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+
+
+  # =========================================================
+  # JOB 2 – Validate Pull Request
+  # =========================================================
+  validate:
+    needs: resolve
+    if: needs.resolve.result == 'success'
+    runs-on: ubuntu-latest
+
+    # Environment-level secret injection
+    environment: ${{ needs.resolve.outputs.env_name }}
 
     container:
       image: sanjaxsf/prulife-sf:1.0.3
@@ -35,26 +73,27 @@ jobs:
 
     steps:
 
+      # -----------------------------------------------------
+      # Display PR Info
+      # -----------------------------------------------------
       - name: Display PR Info
         run: |
           echo "Source Branch: ${{ inputs.source_branch }}"
           echo "Target Branch: ${{ inputs.target_branch }}"
-          
-      - name: Validate Target Branch
-        run: |
-          if ! grep -qx "${{ inputs.target_branch }}" config/branches.txt; then
-            echo "Branch '${{ inputs.target_branch }}' is NOT allowed."
-            echo "Skipping pipeline execution."
-            exit 0
-          fi
-          echo "Branch allowed. Continuing..."
-          
+          echo "Resolved Environment: ${{ needs.resolve.outputs.env_name }}"
+
+      # -----------------------------------------------------
+      # Checkout Salesforce Repository
+      # -----------------------------------------------------
       - name: Checkout Salesforce Repo
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.source_branch }}
           fetch-depth: 0
 
+      # -----------------------------------------------------
+      # Environment Sanity Check
+      # -----------------------------------------------------
       - name: Environment Sanity Check
         run: |
           echo "Checking installed tools..."
@@ -67,9 +106,15 @@ jobs:
       - name: Fix Git Safe Directory
         run: git config --global --add safe.directory $GITHUB_WORKSPACE
 
+      # -----------------------------------------------------
+      # Fetch Target Branch
+      # -----------------------------------------------------
       - name: Fetch Target Branch
         run: git fetch origin ${{ inputs.target_branch }}
 
+      # -----------------------------------------------------
+      # Compute Merge Base
+      # -----------------------------------------------------
       - name: Compute Merge Base
         id: mergebase
         run: |
@@ -82,6 +127,9 @@ jobs:
           sf version
           sf plugins
 
+      # -----------------------------------------------------
+      # Generate Delta Package
+      # -----------------------------------------------------
       - name: Generate Delta Package
         run: |
           mkdir force-app-delta
@@ -95,6 +143,9 @@ jobs:
         run: |
           ls -R force-app-delta || echo "No delta generated"
 
+      # -----------------------------------------------------
+      # Print Generated package.xml
+      # -----------------------------------------------------
       - name: Print Generated package.xml
         run: |
           if [ -f force-app-delta/package/package.xml ]; then
@@ -105,6 +156,9 @@ jobs:
             echo "No package.xml generated"
           fi
 
+      # -----------------------------------------------------
+      # Print Generated destructiveChanges.xml
+      # -----------------------------------------------------
       - name: Print Generated destructiveChanges.xml
         run: |
           if [ -f force-app-delta/destructiveChanges/destructiveChanges.xml ]; then
@@ -114,37 +168,15 @@ jobs:
           else
             echo "No destructiveChanges.xml generated"
           fi
-          
-      - name: Resolve Environment From Branch
-        id: resolve_env
-        run: |
-          case "${{ inputs.target_branch }}" in            
-            dev)       ENV_NAME="SANDEV" ;;
-            uat)       ENV_NAME="SANUAT" ;;
-            *)
-              echo "Unknown branch mapping."
-              exit 1
-              ;;
-          esac
 
-          echo "Resolved Environment: $ENV_NAME"
-          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
-
-      - name: Authenticate to DEV Org
-        if: steps.resolve_env.outputs.env_name == 'SANDEV'
+      # -----------------------------------------------------
+      # Authenticate to Target Org (Environment Scoped Secret)
+      # -----------------------------------------------------
+      - name: Authenticate to Target Org
         run: |
-          echo "${{ secrets.SF_AUTH_URL_DEV }}" > token.txt
-          sf auth sfdxurl store -f token.txt -a myOrg -s
-          rm token.txt
-
-      - name: Authenticate to UAT Org
-        if: steps.resolve_env.outputs.env_name == 'SANUAT'
-        run: |
-          echo "${{ secrets.SF_AUTH_URL_UAT }}" > token.txt
+          echo "${{ secrets.SF_AUTH_URL }}" > token.txt
           sf auth sfdxurl store -f token.txt -a myOrg -s
           rm token.txt
 
       - name: Verify Auth
-        run: |
-          sf org list
-      
+        run: sf org list
