@@ -11,11 +11,11 @@ on:
         type: string
     secrets:
       GH_PAT:
-        required: true
+        required: false
       DOCKER_USERNAME:
-        required: true
+        required: false
       DOCKER_PASSWORD:
-        required: true
+        required: false
 
 jobs:
 
