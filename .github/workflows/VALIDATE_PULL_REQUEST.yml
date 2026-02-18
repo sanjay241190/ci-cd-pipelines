@@ -16,6 +16,12 @@ on:
         required: true
       DOCKER_PASSWORD:
         required: true
+      SF_AUTH_URL_DEV:
+        required: false
+      SF_AUTH_URL_UAT:
+        required: false
+      SF_AUTH_URL_PROD:
+        required: false
 
 jobs:
   validate:
@@ -107,6 +113,38 @@ jobs:
             echo "========== DESTRUCTIVE CHANGES XML =========="
             cat force-app-delta/destructiveChanges/destructiveChanges.xml
             echo "============================================="
-          else
+          else      
             echo "No destructiveChanges.xml generated"
           fi
+
+     # =====================================================
+      # Resolve Environment From Branch
+      # =====================================================
+      - name: Resolve Environment Mapping
+        id: resolve_env
+        run: |
+          case "${{ inputs.target_branch }}" in
+            dev)
+              ENV_NAME="SANDEV"
+              AUTH_SECRET="SF_AUTH_URL_DEV"
+              ;;
+            uat)
+              ENV_NAME="SANUAT"
+              AUTH_SECRET="SF_AUTH_URL_UAT"
+              ;;
+            main)
+              ENV_NAME="SANPROD"
+              AUTH_SECRET="SF_AUTH_URL_PROD"
+              ;;
+            *)
+              echo "Branch not supported. Exiting."
+              exit 1
+              ;;
+          esac
+
+          echo "Resolved Environment: $ENV_NAME"
+          echo "Using Auth Secret: $AUTH_SECRET"
+
+          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+          echo "auth_secret=$AUTH_SECRET" >> $GITHUB_OUTPUT
+
