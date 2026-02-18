@@ -34,7 +34,16 @@ jobs:
         run: |
           echo "Source Branch: ${{ inputs.source_branch }}"
           echo "Target Branch: ${{ inputs.target_branch }}"
-
+          
+      - name: Validate Target Branch
+        run: |
+          if ! grep -qx "${{ inputs.target_branch }}" config/branches.txt; then
+            echo "Branch '${{ inputs.target_branch }}' is NOT allowed."
+            echo "Skipping pipeline execution."
+            exit 0
+          fi
+          echo "Branch allowed. Continuing..."
+          
       - name: Checkout Salesforce Repo
         uses: actions/checkout@v4
         with:
