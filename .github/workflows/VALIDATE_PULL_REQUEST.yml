@@ -126,10 +126,19 @@ jobs:
           echo "Resolved Environment: $ENV_NAME"
           echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
 
-      - name: Authenticate to Target Org
+      - name: Authenticate to DEV Org
+        if: steps.resolve_env.outputs.env_name == 'SANDEV'
         run: |
           echo "${{ secrets.SF_AUTH_URL_DEV }}" > token.txt
           sf auth sfdxurl store -f token.txt -a myOrg -s
+          rm token.txt
+
+      - name: Authenticate to UAT Org
+        if: steps.resolve_env.outputs.env_name == 'SANUAT'
+        run: |
+          echo "${{ secrets.SF_AUTH_URL_UAT }}" > token.txt
+          sf auth sfdxurl store -f token.txt -a myOrg -s
+          rm token.txt
 
       - name: Verify Auth
         run: |
