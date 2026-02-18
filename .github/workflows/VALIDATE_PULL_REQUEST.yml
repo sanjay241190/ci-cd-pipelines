@@ -168,7 +168,15 @@ jobs:
           else
             echo "No destructiveChanges.xml generated"
           fi
-
+          
+      - name: Debug Secret Length
+        run: |
+          if [ -z "${{ secrets.SF_AUTH_URL }}" ]; then
+            echo "SECRET IS EMPTY"
+            exit 1
+          else
+            echo "Secret is present"
+          fi
       # -----------------------------------------------------
       # Authenticate to Target Org (Environment Scoped Secret)
       # -----------------------------------------------------
