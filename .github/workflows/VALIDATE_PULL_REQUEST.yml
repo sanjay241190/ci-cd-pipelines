@@ -128,7 +128,7 @@ jobs:
 
       - name: Authenticate to Target Org
         run: |
-          echo "${{ secrets.SF_AUTH_URL }}" > token.txt
+          echo "${{ secrets.SF_AUTH_URL_DEV }}" > token.txt
           sf auth sfdxurl store -f token.txt -a myOrg -s
 
       - name: Verify Auth
