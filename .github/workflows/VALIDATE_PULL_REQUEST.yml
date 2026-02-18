@@ -148,3 +148,36 @@ jobs:
           echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
           echo "auth_secret=$AUTH_SECRET" >> $GITHUB_OUTPUT
 
+      # =====================================================
+      # Authenticate to Target Org (Dynamic Secret Selection)
+      # =====================================================
+      - name: Authenticate to Target Org
+        run: |
+          case "${{ steps.resolve_env.outputs.auth_secret }}" in
+            SF_AUTH_URL_DEV)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_DEV }}"
+              ;;
+            SF_AUTH_URL_UAT)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_UAT }}"
+              ;;
+            SF_AUTH_URL_PROD)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_PROD }}"
+              ;;
+            *)
+              echo "No matching auth secret found"
+              exit 1
+              ;;
+          esac
+
+          if [ -z "$AUTH_VALUE" ]; then
+            echo "Auth secret is empty!"
+            exit 1
+          fi
+
+          echo "$AUTH_VALUE" > token.txt
+          sf auth sfdxurl store -f token.txt -a myOrg -s
+          rm token.txt
+
+      - name: Verify Auth
+        run: sf org list
+
