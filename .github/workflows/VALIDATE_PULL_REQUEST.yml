@@ -147,7 +147,28 @@ jobs:
 
           echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
           echo "auth_secret=$AUTH_SECRET" >> $GITHUB_OUTPUT
+          
+      # =====================================================
+      # Replace Placeholders
+      # =====================================================
+          
+      - name: "Replace placeholders with environment property values"
+        run: |
+          TARGET_BRANCH="${{ github.base_ref }}"
+          echo "Using Target Branch: $TARGET_BRANCH"
+          
+          case "$TARGET_BRANCH" in
+            "dev")      ENV="SANDEV" ;;
+            "uat")      ENV="SANUAT" ;;
+            *)
+              echo "Unknown Branch ($TARGET_BRANCH), Exiting"
+              exit 1
+              ;;
+          esac
 
+          echo "Preparing $ENV Properties"
+          ant prepare -Dsf.env=$ENV
+          
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
       # =====================================================
