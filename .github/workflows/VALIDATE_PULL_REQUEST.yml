@@ -153,6 +153,7 @@ jobs:
       # =====================================================
           
       - name: "Replace placeholders with environment property values"
+        working-directory: ./SalesforcePrulifePOC
         run: |
           TARGET_BRANCH="${{ github.base_ref }}"
           echo "Using Target Branch: $TARGET_BRANCH"
