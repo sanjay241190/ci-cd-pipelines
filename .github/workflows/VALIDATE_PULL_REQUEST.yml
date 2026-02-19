@@ -153,8 +153,11 @@ jobs:
       # =====================================================
           
       - name: "Replace placeholders with environment property values"
-        working-directory: ./SalesforcePrulifePOC
         run: |
+          PROJECT_ROOT=$(find . -name "build.xml" -exec dirname {} \;)
+          echo "Found build.xml in: $PROJECT_ROOT"
+          cd "$PROJECT_ROOT"
+          
           TARGET_BRANCH="${{ github.base_ref }}"
           echo "Using Target Branch: $TARGET_BRANCH"
           
