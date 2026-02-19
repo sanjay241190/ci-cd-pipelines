@@ -177,17 +177,13 @@ jobs:
       # =====================================================
       - name: "Validate Placeholder Replacement"
         run: |
-          # 1. Change to the directory where ant generated the files
-          # Based on your logs, it looks like it's in the 'tmp' or 'deploy' folder
+          
           cd SalesforcePrulifePOC/tmp 
 
           echo "--- Checking for specific replaced values ---"
-          # Replace 'Some_Value' with an actual value from your SANDEV.properties 
-          # and 'Place_Holder' with the key in your metadata (e.g., __ENV_URL__)
           grep -R "testing_properties_placeholders" . || echo "Value not found!"
           
           echo "--- Content of a sample metadata file ---"
-          # Replace 'path/to/file' with a file you know has placeholders
           cat "tmp/force-app/main/default/triggers/AccountAction.trigger" | head -n 20
           
       # =====================================================
