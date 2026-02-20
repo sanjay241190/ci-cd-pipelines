@@ -318,14 +318,30 @@ jobs:
                 --tests $SPECIFIED_TESTS \
                 --dry-run \
                 --target-org myOrg \
-                --wait 100 \
-                --json \
-                --api-version 65.0
-            fi
-      
-          else
+                --wait 100 \                
+                --api-version 65.0 \
+                --json > deploy-result.json
+
+              echo "Deployment JSON result:"
+              cat deploy-result.json
+          
+           else
             echo "No SF changes found. Deployment skipped."
           fi
+          
+              STATUS=$(jq -r '.result.status // .status' deploy-result.json)
+
+            # Checking Validation Status
+            
+              if [ "$STATUS" != "Succeeded" ]; then
+                echo "Deployment validation failed."
+                exit 1
+              fi
+          
+              echo "Deployment validation succeeded."
+            fi
+      
+         
       
     
 
