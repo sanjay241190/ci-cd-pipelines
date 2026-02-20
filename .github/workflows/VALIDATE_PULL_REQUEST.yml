@@ -268,3 +268,64 @@ jobs:
       - name: Verify Auth
         run: sf org list
 
+     # =====================================================
+      # Validate to Target Org 
+      # =====================================================
+      
+      - name: Delta Validation to Target Org
+        shell: bash
+        run: |
+          if [ -f force-app-delta/package/package.xml ] && [ $(wc -l < force-app-delta/package/package.xml) -gt 4 ]; then
+      
+            NUMBER_OF_COMPONENTS=$(grep -o "<members>" force-app-delta/package/package.xml | wc -l)
+      
+            if [ $(egrep 'name>ApexClass|name>ApexTrigger' force-app-delta/package/package.xml | wc -l) -lt 1 ]; then
+      
+              echo "Validating Delta and NOT running Apex tests ($NUMBER_OF_COMPONENTS components)"
+      
+              sf project deploy start \
+                --ignore-warnings \
+                --manifest force-app-delta/package/package.xml \
+                --test-level NoTestRun \
+                --dry-run \
+                --target-org myOrg \
+                --wait 100 \
+                --json \
+                --api-version 65.0
+      
+            else
+      
+              echo "Apex detected in delta."
+      
+              SPECIFIED_TESTS=$(find force-app-delta -type f -path "*classes/*Test.cls" -o -path "*classes/*test.cls" \
+                | xargs -n1 basename \
+                | sed 's/.cls//g' \
+                | tr '\n' ' ')
+      
+              if [ -z "$SPECIFIED_TESTS" ]; then
+                echo "You are committing Apex Classes or Triggers without including any test class."
+                echo "Please commit respective Test Classes."
+                exit 1
+              fi
+      
+              echo "Executing the following Test Classes:"
+              echo "$SPECIFIED_TESTS"
+      
+              sf project deploy start \
+                --ignore-warnings \
+                --manifest force-app-delta/package/package.xml \
+                --test-level RunSpecifiedTests \
+                --tests $SPECIFIED_TESTS \
+                --dry-run \
+                --target-org myOrg \
+                --wait 100 \
+                --json \
+                --api-version 65.0
+            fi
+      
+          else
+            echo "No SF changes found. Deployment skipped."
+          fi
+      
+    
+
