@@ -320,15 +320,11 @@ jobs:
                 --target-org myOrg \
                 --wait 100 \                
                 --api-version 65.0 \
-                --json > deploy-result.json
+                --json > deploy-result.json           
 
               echo "Deployment JSON result:"
               cat deploy-result.json
-          
-           else
-            echo "No SF changes found. Deployment skipped."
-          fi
-          
+
               STATUS=$(jq -r '.result.status // .status' deploy-result.json)
 
             # Checking Validation Status
@@ -340,6 +336,13 @@ jobs:
           
               echo "Deployment validation succeeded."
             fi
+          fi
+          
+           else
+            echo "No SF changes found. Deployment skipped."
+          fi
+          
+              
       
          
       
