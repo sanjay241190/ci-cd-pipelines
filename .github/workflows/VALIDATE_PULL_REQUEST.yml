@@ -172,7 +172,33 @@ jobs:
 
           echo "Preparing $ENV Properties"
           ant prepare -Dsf.env=$ENV
+
+
+      # =====================================================
+      # PMD Setup and Scan
+      # =====================================================
+     # Register custom rules
     
+      - name: Register Custom Scanner Rules
+        run: |
+          sf scanner rule add --language xml \
+            --path "./scripts/pmd/category/xml/xml_custom_rules.xml"
+      
+          sf scanner rule add --language apex \
+            --path "./scripts/pmd/category/apex/apex_custom_rules.xml"
+      
+      # Run PMD scan
+      - name: Run PMD Scan on Delta
+        run: |
+          export SF_SCANNER_TARGET_APIV=65.0
+      
+          sf scanner run \
+            --target "./force-app-delta/force-app/" \
+            --pmdconfig "./scripts/pmd/rulesets/critical_scan.xml" \
+            --severity-threshold "1" \
+            --engine "pmd" \
+            --format csv \
+            --outfile pmd-delta-report.csv
           
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
