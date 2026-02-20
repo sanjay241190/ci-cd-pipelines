@@ -326,3 +326,32 @@ jobs:
           else
             echo "No SF changes found. Deployment skipped."
           fi
+
+      # =====================================================
+      # Destructive Changes Validation (Non-blocking)
+      # =====================================================
+      - name: Validate Destructive Changes (Non-Blocking)
+        if: always()
+        continue-on-error: true
+        shell: bash
+        run: |
+          FILE="force-app-delta/destructiveChanges/destructiveChanges.xml"
+
+          if [ -f "$FILE" ] && grep -q '<types>' "$FILE"; then
+            echo "Destructive changes detected."
+            echo "Removing the below components:"
+            cat "$FILE"
+
+            sf project deploy start \
+              --ignore-warnings \
+              --manifest force-app-delta/package/package.xml \
+              --post-destructive-changes "$FILE" \
+              --test-level NoTestRun \
+              --dry-run \
+              --target-org myOrg \
+              --wait 100 \
+              --api-version 65.0
+
+          else
+            echo "No destructive changes found."
+          fi
