@@ -297,7 +297,7 @@ jobs:
       
               echo "Apex detected in delta."
       
-              SPECIFIED_TESTS=$(find force-app-delta -type f \( -iname "*Test.cls" -o -iname "*test.cls" \) \
+              SPECIFIED_TESTS=$(find deploy -type f \( -iname "*Test.cls" -o -iname "*test.cls" \) \
                 | sed 's#.*/##' \
                 | sed 's/.cls$//' \
                 | tr '\n' ' ')
