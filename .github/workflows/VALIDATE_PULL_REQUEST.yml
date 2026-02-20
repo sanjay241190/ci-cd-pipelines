@@ -199,6 +199,14 @@ jobs:
             --engine "pmd" \
             --format csv \
             --outfile pmd-delta-report.csv
+            
+      # Upload the Delta PMD scan
+      - name: Upload PMD Delta Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeScanReport_PMD_Delta
+          path: pmd-delta-report.csv
+        if: always()
           
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
