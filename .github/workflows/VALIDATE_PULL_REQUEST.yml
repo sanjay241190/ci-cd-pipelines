@@ -297,11 +297,11 @@ jobs:
       
               echo "Apex detected in delta."
       
-              SPECIFIED_TESTS=$(find force-app-delta -type f -path "*classes/*Test.cls" -o -path "*classes/*test.cls" \
-                | xargs -n1 basename \
-                | sed 's/.cls//g' \
+              SPECIFIED_TESTS=$(find force-app-delta -type f \( -iname "*Test.cls" -o -iname "*test.cls" \) \
+                | sed 's#.*/##' \
+                | sed 's/.cls$//' \
                 | tr '\n' ' ')
-      
+              
               if [ -z "$SPECIFIED_TESTS" ]; then
                 echo "You are committing Apex Classes or Triggers without including any test class."
                 echo "Please commit respective Test Classes."
