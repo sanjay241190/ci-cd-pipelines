@@ -24,43 +24,11 @@ on:
         required: false
 
 jobs:
-  branch_check:
-      runs-on: ubuntu-latest
-  
-      outputs:
-        allowed: ${{ steps.check.outputs.allowed }}
-  
-      steps:
-        - name: Checkout Repository (to read branches.txt)
-          uses: actions/checkout@v4
-          with:
-            ref: ${{ inputs.source_branch }}
-  
-        - name: Validate Target Branch Against config/branches.txt
-          id: check
-          shell: bash
-          run: |
-            echo "Checking if '${{ inputs.target_branch }}' is allowed..."
-  
-            if [ ! -f config/branches.txt ]; then
-              echo "config/branches.txt not found!"
-              echo "allowed=false" >> $GITHUB_OUTPUT
-              exit 0
-            fi
-  
-            if grep -qx "${{ inputs.target_branch }}" config/branches.txt; then
-              echo "Branch allowed."
-              echo "allowed=true" >> $GITHUB_OUTPUT
-            else
-              echo "Branch NOT allowed. Skipping pipeline."
-              echo "allowed=false" >> $GITHUB_OUTPUT
-            fi
-      
-  validate:
-    needs: branch_check
-    if: needs.branch_check.outputs.allowed == 'true'
-    runs-on: ubuntu-latest
 
+  validate:    
+    if: contains(fromJson('["main","dev","uat"]'), inputs.target_branch)
+    runs-on: ubuntu-latest
+    
     container:
       image: sanjaxsf/prulife-sf:1.0.3
       options: --pull always
@@ -74,15 +42,6 @@ jobs:
         run: |
           echo "Source Branch: ${{ inputs.source_branch }}"
           echo "Target Branch: ${{ inputs.target_branch }}"
-          
-      - name: Validate Target Branch
-        run: |
-          if ! grep -qx "${{ inputs.target_branch }}" config/branches.txt; then
-            echo "Branch '${{ inputs.target_branch }}' is NOT allowed."
-            echo "Skipping pipeline execution."
-            exit 0
-          fi
-          echo "Branch allowed. Continuing..."
           
       - name: Checkout Salesforce Repo
         uses: actions/checkout@v4
