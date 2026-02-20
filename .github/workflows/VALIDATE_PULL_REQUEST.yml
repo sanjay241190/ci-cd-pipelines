@@ -207,7 +207,34 @@ jobs:
           name: CodeScanReport_PMD_Delta
           path: pmd-delta-report.csv
         if: always()
-          
+
+      - name: Run LWC ESLint Scan (Delta Only)
+        id: eslint
+        continue-on-error: true
+        run: |
+          if [ ! -d "force-app-delta/force-app" ]; then
+            echo "No delta folder found. Skipping ESLint scan."
+            exit 0
+          fi
+      
+          echo "Executing ESLint Scan on Delta..."
+      
+          sf scanner run \
+            --target "./force-app-delta/force-app/**/*.js" \
+            --eslintconfig "./scripts/eslint/.eslintrc.json" \
+            --severity-threshold 1 \
+            --engine eslint-lwc \
+            --format csv
+            --outfile eslint-report.csv
+
+          echo "Scan Complete"
+
+      - name: Upload ESLint Report
+        uses: actions/upload-artifact@v4
+        with:
+           name: ESLint-Report
+           path: eslint-report.csv
+            
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
       # =====================================================
