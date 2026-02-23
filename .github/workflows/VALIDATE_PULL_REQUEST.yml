@@ -25,7 +25,8 @@ on:
 
 jobs:
 
-  validate-pull-request:    
+  validate-pull-request:  
+    timeout-minutes: 60
     if: contains(fromJson('["main","dev","uat"]'), inputs.target_branch)
     runs-on: ubuntu-latest
     
