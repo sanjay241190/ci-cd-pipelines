@@ -1,0 +1,150 @@
+name: DEPLOY ON MERGE (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      target_branch:
+        required: true
+        type: string
+    secrets:
+      DOCKER_USERNAME:
+        required: true
+      DOCKER_PASSWORD:
+        required: true
+      SF_AUTH_URL_DEV:
+        required: false
+      SF_AUTH_URL_UAT:
+        required: false
+      SF_AUTH_URL_PROD:
+        required: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    if: contains(fromJson('["dev","uat","main"]'), inputs.target_branch)
+
+    container:
+      image: sanjaxsf/prulife-sf:1.0.3
+      options: --pull always
+      credentials:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    steps:
+      - name: Checkout Target Branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch }}
+          fetch-depth: 2
+
+      - name: Generate Delta
+        run: |
+          mkdir force-app-delta
+          sf sgd:source:delta \
+            --to HEAD \
+            --from HEAD^ \
+            --output-dir force-app-delta \
+            --source-dir force-app
+
+      - name: Resolve Environment
+        id: resolve_env
+        run: |
+          case "${{ inputs.target_branch }}" in
+            dev)
+              ENV_NAME="SANDEV"
+              AUTH_SECRET="SF_AUTH_URL_DEV"
+              ;;
+            uat)
+              ENV_NAME="SANUAT"
+              AUTH_SECRET="SF_AUTH_URL_UAT"
+              ;;
+            main)
+              ENV_NAME="SANPROD"
+              AUTH_SECRET="SF_AUTH_URL_PROD"
+              ;;
+            *)
+              echo "Unsupported branch"
+              exit 1
+              ;;
+          esac
+
+          echo "env_name=$ENV_NAME" >> $GITHUB_OUTPUT
+          echo "auth_secret=$AUTH_SECRET" >> $GITHUB_OUTPUT
+
+
+      - name: Authenticate to Org
+        run: |
+          case "${{ steps.resolve_env.outputs.auth_secret }}" in
+            SF_AUTH_URL_DEV)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_DEV }}"
+              ;;
+            SF_AUTH_URL_UAT)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_UAT }}"
+              ;;
+            SF_AUTH_URL_PROD)
+              AUTH_VALUE="${{ secrets.SF_AUTH_URL_PROD }}"
+              ;;
+          esac
+
+          echo "$AUTH_VALUE" > token.txt
+          sf auth sfdxurl store -f token.txt -a myOrg -s
+          rm token.txt
+
+
+      - name: Deploy Delta
+        run: |
+          if [ -f force-app-delta/package/package.xml ] && \
+             [ $(wc -l < force-app-delta/package/package.xml) -gt 4 ]; then
+
+            if [ $(egrep 'name>ApexClass|name>ApexTrigger' force-app-delta/package/package.xml | wc -l) -lt 1 ]; then
+
+              echo "Deploying without running tests"
+
+              sf project deploy start \
+                --manifest force-app-delta/package/package.xml \
+                --test-level NoTestRun \
+                --target-org myOrg \
+                --wait 100 \
+                --api-version 65.0
+
+            else
+
+              SPECIFIED_TESTS=$(find force-app-delta/force-app \
+                -type f -iname "*Test.cls" \
+                | sed 's#.*/##' \
+                | sed 's/.cls$//' \
+                | tr '\n' ' ')
+
+              if [ -z "$SPECIFIED_TESTS" ]; then
+                echo "Apex detected but no tests found"
+                exit 1
+              fi
+
+              sf project deploy start \
+                --manifest force-app-delta/package/package.xml \
+                --test-level RunSpecifiedTests \
+                --tests $SPECIFIED_TESTS \
+                --target-org myOrg \
+                --wait 100 \
+                --api-version 65.0
+            fi
+          else
+            echo "No changes detected."
+          fi
+
+      - name: Deploy Destructive Changes
+        run: |
+          FILE="force-app-delta/destructiveChanges/destructiveChanges.xml"
+
+          if [ -f "$FILE" ] && grep -q '<types>' "$FILE"; then
+            sf project deploy start \
+              --manifest force-app-delta/package/package.xml \
+              --post-destructive-changes "$FILE" \
+              --test-level NoTestRun \
+              --target-org myOrg \
+              --wait 100
+          else
+            echo "No destructive changes."
+          fi
