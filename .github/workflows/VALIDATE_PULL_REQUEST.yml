@@ -262,9 +262,10 @@ jobs:
       # Run AI PR Risk Analysis
       # -----------------------------------------
       - name: Run AI PR Risk Analysis
+        continue-on-error: false
         if: github.event_name == 'pull_request'
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ secrets.GH_PAT }}
