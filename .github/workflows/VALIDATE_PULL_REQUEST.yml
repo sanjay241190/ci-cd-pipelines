@@ -12,6 +12,10 @@ on:
     secrets:
       GH_PAT:
         required: true
+      GH_PAT_CI_CD_PIPELINES_REPO:
+        required: true
+      OPENAI_API_KEY:
+        required: true
       DOCKER_USERNAME:
         required: true
       DOCKER_PASSWORD:
