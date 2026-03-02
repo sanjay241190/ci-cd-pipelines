@@ -14,6 +14,8 @@ on:
         required: true
       GH_PAT_CI_CD_PIPELINES_REPO_SECRET:
         required: true
+      GH_TOKEN:
+        required: true
       GEMINI_API_KEY:
         required: true
       DOCKER_USERNAME:
