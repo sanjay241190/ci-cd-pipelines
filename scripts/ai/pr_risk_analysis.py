@@ -1,138 +1,102 @@
 import os
+import json
 import requests
+import subprocess
 import sys
 
+OPENAI_KEY = os.environ["OPENAI_API_KEY"]
+PR_NUMBER = os.environ["PR_NUMBER"]
+REPO = os.environ["GITHUB_REPOSITORY"]
+GH_TOKEN = os.environ["GH_TOKEN"]
 
-def get_env_variable(name):
-    value = os.environ.get(name)
-    if not value:
-        raise Exception(f"Missing required environment variable: {name}")
-    return value
+# Read delta package.xml
+package_path = "force-app-delta/package/package.xml"
+destructive_path = "force-app-delta/destructiveChanges/destructiveChanges.xml"
 
+def read_file(path):
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return f.read()
+    return "None"
 
-def main():
-    # ==============================
-    # Load Environment Variables
-    # ==============================
-    OPENAI_KEY = get_env_variable("OPENAI_API_KEY")
-    PR_NUMBER = get_env_variable("PR_NUMBER")
-    REPO = get_env_variable("GITHUB_REPOSITORY")
-    GH_TOKEN = get_env_variable("GH_TOKEN")
+package_xml = read_file(package_path)
+destructive_xml = read_file(destructive_path)
 
-    print(f"Running AI PR Risk Analysis for PR #{PR_NUMBER}")
-    print(f"Repository: {REPO}")
+prompt = f"""
+You are a Salesforce DevOps risk analyzer.
 
-    # ==============================
-    # Get PR Details from GitHub
-    # ==============================
-    pr_url = f"https://api.github.com/repos/{REPO}/pulls/{PR_NUMBER}"
-    headers = {
-        "Authorization": f"token {GH_TOKEN}",
-        "Accept": "application/vnd.github+json"
-    }
-
-    pr_response = requests.get(pr_url, headers=headers)
-
-    if pr_response.status_code != 200:
-        print("GitHub API Error:", pr_response.status_code)
-        print(pr_response.text)
-        raise Exception("Failed to fetch PR details from GitHub")
-
-    pr_data = pr_response.json()
-
-    pr_title = pr_data.get("title", "")
-    pr_body = pr_data.get("body", "")
-
-    print("PR Title:", pr_title)
-
-    # ==============================
-    # Call OpenAI API
-    # ==============================
-    openai_headers = {
-        "Authorization": f"Bearer {OPENAI_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    openai_payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {
-                "role": "system",
-                "content": "You are a senior Salesforce DevOps architect performing pull request risk analysis."
-            },
-            {
-                "role": "user",
-                "content": f"""
-Analyze this Salesforce Pull Request and provide:
+Analyze the following delta changes and provide:
 
 1. Risk Level (Low / Medium / High)
-2. Short reasoning (2-4 lines)
-3. Any recommended review focus areas
+2. Why
+3. Recommended reviewer focus areas
 
-PR Title:
-{pr_title}
+Package.xml:
+{package_xml}
 
-PR Description:
-{pr_body}
+DestructiveChanges.xml:
+{destructive_xml}
 """
-            }
-        ],
-        "temperature": 0.2
+
+# ===============================
+# Call OpenAI
+# ===============================
+response = requests.post(
+    "https://api.openai.com/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {OPENAI_KEY}",
+        "Content-Type": "application/json"
+    },
+    json={
+        "model": "gpt-4o-mini",
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3
     }
+)
 
-    ai_response = requests.post(
-        "https://api.openai.com/v1/chat/completions",
-        headers=openai_headers,
-        json=openai_payload
-    )
+# 🔒 HTTP Status Check
+if response.status_code != 200:
+    print("OpenAI HTTP Error:", response.status_code)
+    print(response.text)
+    sys.exit(1)
 
-    if ai_response.status_code != 200:
-        print("OpenAI HTTP Error:", ai_response.status_code)
-        print(ai_response.text)
-        raise Exception("OpenAI API request failed")
+result = response.json()
 
-    ai_result = ai_response.json()
+# 🔒 KeyError Protection for 'choices'
+if "choices" not in result:
+    print("Unexpected OpenAI response structure:")
+    print(json.dumps(result, indent=2))
+    sys.exit(1)
 
-    if "choices" not in ai_result:
-        print("Unexpected OpenAI response:")
-        print(ai_result)
-        raise Exception("No 'choices' found in OpenAI response")
+if not result["choices"]:
+    print("OpenAI returned empty choices array.")
+    print(json.dumps(result, indent=2))
+    sys.exit(1)
 
-    ai_message = ai_result["choices"][0]["message"]["content"]
+ai_text = result["choices"][0]["message"]["content"]
 
-    print("AI Analysis generated successfully.")
+comment_body = f"""
+## 🤖 AI Deployment Risk Analysis
 
-    # ==============================
-    # Post Comment on PR
-    # ==============================
-    comment_url = f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments"
+{ai_text}
+"""
 
-    comment_payload = {
-        "body": f"""🤖 **AI PR Risk Analysis**
+# ===============================
+# Post comment to PR
+# ===============================
+comment_response = requests.post(
+    f"https://api.github.com/repos/{REPO}/issues/{PR_NUMBER}/comments",
+    headers={
+        "Authorization": f"token {GH_TOKEN}",
+        "Accept": "application/vnd.github+json"
+    },
+    json={"body": comment_body}
+)
 
-{ai_message}
+# Optional: Validate GitHub response
+if comment_response.status_code not in [200, 201]:
+    print("Failed to post PR comment:", comment_response.status_code)
+    print(comment_response.text)
+    sys.exit(1)
 
----
-_Automated analysis generated during CI validation._"""
-    }
-
-    comment_response = requests.post(
-        comment_url,
-        headers=headers,
-        json=comment_payload
-    )
-
-    if comment_response.status_code not in [200, 201]:
-        print("Failed to post PR comment:", comment_response.status_code)
-        print(comment_response.text)
-        raise Exception("Failed to post PR comment")
-
-    print("AI PR comment posted successfully.")
-
-
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        print("❌ Script failed:", str(e))
-        sys.exit(1)
+print("AI PR Risk Analysis comment posted successfully.")
