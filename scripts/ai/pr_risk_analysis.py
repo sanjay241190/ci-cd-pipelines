@@ -41,7 +41,7 @@ DestructiveChanges.xml:
 # ===============================
 
 response = requests.post(
-    f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}",
+    f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}",
     headers={"Content-Type": "application/json"},
     json={
         "contents": [
