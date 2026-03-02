@@ -244,7 +244,7 @@ jobs:
         with:
           repository: sanjay241190/ci-cd-pipelines
           path: ci-cd-pipelines
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GH_PAT_CI_CD_PIPELINES_REPO }}
       
       # -----------------------------------------
       # Install Python Dependencies
