@@ -235,6 +235,19 @@ jobs:
         with:
            name: ESLint-Report
            path: eslint-report.csv
+           
+      - name: Install Python dependencies for AI
+        run: pip install requests
+
+      - name: Run AI PR Risk Analysis
+        if: github.event_name == 'pull_request'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          python scripts/ai/pr_risk_analysis.py
             
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
