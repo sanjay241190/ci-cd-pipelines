@@ -243,38 +243,7 @@ jobs:
            name: ESLint-Report
            path: eslint-report.csv
            
-      # -----------------------------------------
-      # Checkout CI/CD Pipelines Repo (AI Script)
-      # -----------------------------------------
-      - name: Checkout CI-CD Pipelines Repo
-        uses: actions/checkout@v4
-        with:
-          repository: sanjay241190/ci-cd-pipelines
-          path: ci-cd-pipelines
-          token: ${{ secrets.GH_PAT_CI_CD_PIPELINES_REPO_SECRET }}
-      
-      # -----------------------------------------
-      # Install Python Dependencies
-      # -----------------------------------------
-      - name: Install AI Dependencies
-        run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install requests
-      
-      # -----------------------------------------
-      # Run AI PR Risk Analysis
-      # -----------------------------------------
-      - name: Run AI PR Risk Analysis
-        continue-on-error: false
-        if: github.event_name == 'pull_request'
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ secrets.FINE_GRAIN_AI_TOKEN }}
-        run: |
-          python3 ci-cd-pipelines/scripts/ai/pr_risk_analysis.py    
-          
+     
       # =====================================================
       # Authenticate to Target Org (Dynamic Secret Selection)
       # =====================================================
