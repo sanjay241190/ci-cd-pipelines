@@ -12,7 +12,7 @@ on:
     secrets:
       GH_PAT:
         required: true
-      GH_PAT_CI_CD_PIPELINES_REPO:
+      GH_PAT_CI_CD_PIPELINES_REPO_SECRET:
         required: true
       OPENAI_API_KEY:
         required: true
@@ -248,7 +248,7 @@ jobs:
         with:
           repository: sanjay241190/ci-cd-pipelines
           path: ci-cd-pipelines
-          token: ${{ secrets.GH_PAT_CI_CD_PIPELINES_REPO }}
+          token: ${{ secrets.GH_PAT_CI_CD_PIPELINES_REPO_SECRET }}
       
       # -----------------------------------------
       # Install Python Dependencies
