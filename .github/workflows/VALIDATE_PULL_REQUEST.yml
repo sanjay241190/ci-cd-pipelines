@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     
     container:
-      image: sanjaxsf/prulife-sf:1.0.3
+      image: sanjaxsf/prulife-sf:1.0.5
       options: --pull always
       credentials:
         username: ${{ secrets.DOCKER_USERNAME }}
